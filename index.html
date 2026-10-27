@@ -14,15 +14,15 @@
 <script>
 /* Replace these placeholders with your Supabase Project URL and PUBLIC publishable/anon key.
    Never put service_role or a secret key in this browser file. */
-const SUPABASE_URL="PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
-const SUPABASE_PUBLIC_KEY="PASTE_YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY_HERE";
+const SUPABASE_URL="https://cxqbkrfggvptapficudv.supabase.co";
+const SUPABASE_PUBLIC_KEY="sb_publishable_SLs8Cu98GbWwcMm902UuFA_Ttsge3dQ";
 document.getElementById("year").textContent=new Date().getFullYear();
 const $=id=>document.getElementById(id);let mode="login",sb=null;
 function msg(el,t,err=false){el.textContent=t;el.classList.remove("hidden");el.classList.toggle("error",err)}
 function clear(el){el.textContent="";el.classList.add("hidden");el.classList.remove("error")}
 function setMode(m){mode=m;$("title").textContent=m==="login"?"Welcome back":"Create account";$("subtitle").textContent=m==="login"?"Sign in to your FactoryMC Nodes account.":"Create your FactoryMC Nodes account.";$("submit").textContent=m==="login"?"Login":"Create account";$("loginTab").className="btn smallbtn"+(m==="login"?"":" secondary");$("signupTab").className="btn smallbtn"+(m==="signup"?"":" secondary");$("password").autocomplete=m==="login"?"current-password":"new-password";clear($("authMsg"))}
 $("loginTab").onclick=()=>setMode("login");$("signupTab").onclick=()=>setMode("signup");
-const configured=SUPABASE_URL.startsWith("https://")&&!https://cxqbkrfggvptapficudv.supabase.("PASTE_")&&SUPABASE_PUBLIC_KEY.length>20&&!sb_publishable_SLs8Cu98GbWwcMm902UuFA_Ttsge3dQ("PASTE_");
+const configured=SUPABASE_URL.startsWith("https://")&&!SUPABASE_URL.includes("PASTE_")&&SUPABASE_PUBLIC_KEY.length>20&&!SUPABASE_PUBLIC_KEY.includes("PASTE_");
 if(!configured){msg($("warning"),"Setup needed: edit index.html and replace SUPABASE_URL and SUPABASE_PUBLIC_KEY with your Supabase Project URL and PUBLIC publishable/anon key. Do not use a secret/service_role key.",true);$("submit").disabled=true}
 else if(!window.supabase){msg($("warning"),"Supabase library did not load. Check your internet connection and refresh.",true)}
 else{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLIC_KEY);sb.auth.getSession().then(({data,error})=>{if(error)msg($("authMsg"),error.message,true);if(data?.session)showDashboard(data.session.user)});sb.auth.onAuthStateChange((_event,session)=>{if(session)showDashboard(session.user);else{$("dashboard").classList.add("hidden");$("auth").classList.remove("hidden")}})}
