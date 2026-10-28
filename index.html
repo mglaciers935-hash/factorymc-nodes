@@ -50,29 +50,36 @@ async function checkAdminAccess(){
 async function loadAdminOrders(){
   const el=$("adminOrders");
   if(!adminAccess){el.textContent="Admin access required.";return}
-  el.textContent="Loading all orders…";clear($("adminMsg"));
-  const {data,error}=await sb.from("orders").select("id,user_id,server_name,plan_name,plan_price_inr,minecraft_version,status,created_at").order("created_at",{ascending:false});
-  if(error){el.textContent="Could not load orders: "+error.message;return}
-  if(!data?.length){el.textContent="No customer orders found.";return}
-  el.innerHTML="";
-  data.forEach(o=>{
-    const row=document.createElement("div");row.className="row";row.style.alignItems="flex-start";
-    const left=document.createElement("div");left.style.flex="1";left.className="order-meta";
-    const name=document.createElement("b");name.textContent=o.server_name||"Server order";
-    const detail=document.createElement("div");detail.className="muted";detail.textContent=(o.plan_name||"Hosting plan")+" · ₹"+(o.plan_price_inr??"—")+" · Minecraft "+(o.minecraft_version||"—");
-    const status=document.createElement("div");status.className="muted";status.textContent="Status: "+(o.status||"pending")+" · Order: "+String(o.id);
-    const uid=document.createElement("div");uid.className="muted";uid.textContent="Customer ID: "+o.user_id;
-    const actions=document.createElement("div");actions.className="admin-actions";
-    left.append(name,detail,status,uid);row.append(left);
-    if(String(o.status||"pending").toLowerCase()==="pending"){
-      const approve=document.createElement("button");approve.type="button";approve.className="btn approve";approve.textContent="Approve";
-      approve.onclick=()=>updateOrderStatus(o.id,"approved",approve);
-      const reject=document.createElement("button");reject.type="button";reject.className="btn reject";reject.textContent="Reject";
-      reject.onclick=()=>updateOrderStatus(o.id,"rejected",reject);
-      actions.append(approve,reject);row.append(actions);
-    }
-    el.append(row);
-  });
+  el.textContent="Loading customer orders and emails…";clear($("adminMsg"));
+  try{
+    const {data,error}=await sb.functions.invoke("admin-customer-emails",{body:{}});
+    if(error)throw error;
+    if(!Array.isArray(data))throw new Error(data?.error||"Unexpected response from admin-customer-emails function.");
+    if(!data.length){el.textContent="No customer orders found.";return}
+    el.innerHTML="";
+    data.forEach(o=>{
+      const row=document.createElement("div");row.className="row";row.style.alignItems="flex-start";
+      const left=document.createElement("div");left.style.flex="1";left.className="order-meta";
+      const name=document.createElement("b");name.textContent=o.server_name||"Server order";
+      const detail=document.createElement("div");detail.className="muted";detail.textContent=(o.plan_name||"Hosting plan")+" · ₹"+(o.plan_price_inr??"—")+" · Minecraft "+(o.minecraft_version||"—");
+      const status=document.createElement("div");status.className="muted";status.textContent="Status: "+(o.status||"pending")+" · Order: "+String(o.id);
+      const email=document.createElement("div");email.className="muted";email.textContent="Customer email: "+(o.customer_email||"Unavailable");
+      const uid=document.createElement("div");uid.className="muted";uid.textContent="Customer ID: "+o.user_id;
+      const actions=document.createElement("div");actions.className="admin-actions";
+      left.append(name,detail,status,email,uid);row.append(left);
+      if(String(o.status||"pending").toLowerCase()==="pending"){
+        const approve=document.createElement("button");approve.type="button";approve.className="btn approve";approve.textContent="Approve";
+        approve.onclick=()=>updateOrderStatus(o.id,"approved",approve);
+        const reject=document.createElement("button");reject.type="button";reject.className="btn reject";reject.textContent="Reject";
+        reject.onclick=()=>updateOrderStatus(o.id,"rejected",reject);
+        actions.append(approve,reject);row.append(actions);
+      }
+      el.append(row);
+    });
+  }catch(err){
+    console.error("Admin orders function failed:",err);
+    el.textContent="Could not load customer emails: "+(err.message||"Function request failed")+". Check the Edge Function deployment and CORS settings.";
+  }
 }
 async function updateOrderStatus(orderId,newStatus,button){
   if(!adminAccess){msg($("adminMsg"),"Admin access required.",true);return}
