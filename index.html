@@ -13,7 +13,7 @@
 <section id="dashboard" class="hidden"><div class="grid"><div class="card"><span class="tag">ACCOUNT</span><h2 id="userEmail">Your account</h2><p>Signed in successfully.</p><button id="signout" class="btn secondary">Sign out</button></div><div class="card"><span class="tag">HOSTING PLANS</span><h2>Available plans</h2><div id="plans" class="muted">Loading plans…</div></div></div>
 <div class="card" style="margin-top:16px"><span class="tag">ORDER A SERVER</span><h2>Choose your server</h2><p>Select a plan and submit an order. No payment is taken in this test version.</p><form id="orderForm"><label for="orderPlan">Hosting plan</label><select id="orderPlan" required style="display:block;width:100%;padding:12px;background:#0c0c15;border:1px solid var(--line);border-radius:10px;color:white;margin:7px 0 13px"><option value="">Loading plans…</option></select><label for="serverName">Server name</label><input id="serverName" maxlength="40" required placeholder="My Survival Server"><label for="mcVersion">Minecraft version</label><select id="mcVersion" required style="display:block;width:100%;padding:12px;background:#0c0c15;border:1px solid var(--line);border-radius:10px;color:white;margin:7px 0 13px"><option>1.21.4</option><option>1.21.1</option><option>1.20.6</option><option>1.20.4</option><option>1.19.4</option></select><button id="orderSubmit" class="btn" type="submit">Submit test order</button></form><div id="orderMsg" class="status hidden"></div></div>
 <div class="card" style="margin-top:16px"><span class="tag">MY ORDERS</span><h2>Your orders</h2><div id="orders" class="muted">Loading orders…</div></div>
-<div id="adminPanel" class="card hidden" style="margin-top:16px"><span class="tag">ADMIN ONLY</span><h2>FactoryMC Order Management</h2><p>Review customer orders. Approve or reject pending requests.</p><button id="refreshAdmin" class="btn secondary" type="button">Refresh Orders</button><div id="adminMsg" class="status hidden"></div><div id="adminOrders" class="muted" style="margin-top:12px">Checking admin access…</div></div>
+<div id="adminPanel" class="card hidden" style="margin-top:16px"><span class="tag">ADMIN ONLY</span><h2>FactoryMC Order Management</h2><p>Review customer orders. Approve or reject pending requests.</p><div id="adminStats" class="grid" style="margin:16px 0"><div class="card"><span class="tag">TOTAL ORDERS</span><div id="statTotal" class="price">—</div></div><div class="card"><span class="tag">PENDING</span><div id="statPending" class="price">—</div></div><div class="card"><span class="tag">APPROVED</span><div id="statApproved" class="price">—</div></div><div class="card"><span class="tag">REJECTED</span><div id="statRejected" class="price">—</div></div><div class="card"><span class="tag">VERIFIED PAID REVENUE</span><div id="statRevenue" class="price">₹0</div><p class="muted">Only orders with status “paid” count.</p></div><div class="card"><span class="tag">UNIQUE CUSTOMERS</span><div id="statCustomers" class="price">—</div></div></div><button id="refreshAdmin" class="btn secondary" type="button">Refresh Orders</button><div id="adminMsg" class="status hidden"></div><div id="adminOrders" class="muted" style="margin-top:12px">Checking admin access…</div></div>
 <div class="card" style="margin-top:16px"><span class="tag">MY SERVERS</span><h2>Your Minecraft servers</h2><div id="servers" class="muted">Loading servers…</div></div><div class="notice"><b>Test mode:</b> Orders are requests only. No payment is taken and no real Minecraft server is created. Do not promise server activation until a secure backend and hosting-node integration are configured.</div><div id="dashMsg" class="status hidden"></div></section></main><footer>© <span id="year"></span> FactoryMC Nodes</footer>
 <script>
 /* Use only the Supabase project URL and public publishable/anon key here.
@@ -55,9 +55,18 @@ async function loadAdminOrders(){
     const {data,error}=await sb.functions.invoke("clever-endpoint",{body:{}});
     if(error)throw error;
     if(!Array.isArray(data))throw new Error(data?.error||"Unexpected response from admin-customer-emails function.");
-    if(!data.length){el.textContent="No customer orders found.";return}
+    const orders=data;
+    const countStatus=status=>orders.filter(o=>String(o.status||"pending").toLowerCase()===status).length;
+    $("statTotal").textContent=orders.length;
+    $("statPending").textContent=countStatus("pending");
+    $("statApproved").textContent=countStatus("approved");
+    $("statRejected").textContent=countStatus("rejected");
+    const paidRevenue=orders.filter(o=>String(o.status||"").toLowerCase()==="paid").reduce((sum,o)=>sum+Number(o.plan_price_inr||0),0);
+    $("statRevenue").textContent="₹"+paidRevenue.toLocaleString("en-IN");
+    $("statCustomers").textContent=new Set(orders.map(o=>o.user_id).filter(Boolean)).size;
+    if(!orders.length){el.textContent="No customer orders found.";return}
     el.innerHTML="";
-    data.forEach(o=>{
+    orders.forEach(o=>{
       const row=document.createElement("div");row.className="row";row.style.alignItems="flex-start";
       const left=document.createElement("div");left.style.flex="1";left.className="order-meta";
       const name=document.createElement("b");name.textContent=o.server_name||"Server order";
