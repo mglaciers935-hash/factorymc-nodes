@@ -52,7 +52,7 @@ async function loadAdminOrders(){
   if(!adminAccess){el.textContent="Admin access required.";return}
   el.textContent="Loading customer orders and emails…";clear($("adminMsg"));
   try{
-    const {data,error}=await sb.functions.invoke("admin-customer-emails",{body:{}});
+    const {data,error}=await sb.functions.invoke("clever-endpoint",{body:{}});
     if(error)throw error;
     if(!Array.isArray(data))throw new Error(data?.error||"Unexpected response from admin-customer-emails function.");
     if(!data.length){el.textContent="No customer orders found.";return}
